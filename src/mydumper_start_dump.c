@@ -1222,7 +1222,6 @@ void start_dump() {
       fprintf(mdfile,"triggers_checksum = %s\n", dbt->triggers_checksum);
 */
     print_dbt_on_metadata(mdfile, dbt);
-    free_db_table(dbt);
   }
   g_list_free(all_dbts);
   write_database_on_disk(mdfile);
@@ -1275,6 +1274,10 @@ void start_dump() {
     if (no_delete == FALSE && output_directory_param == NULL)
       if (g_rmdir(output_directory) != 0)
         g_critical("Backup directory not removed: %s", output_directory);
+  }
+
+  for (iter = all_dbts; iter != NULL; iter = iter->next) {
+    free_db_table((struct db_table *)iter->data);
   }
 
   g_free(td);
