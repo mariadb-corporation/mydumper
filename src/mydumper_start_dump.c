@@ -679,7 +679,7 @@ void determine_ddl_lock_function(MYSQL ** conn, void(**acquire_global_lock_funct
 
 
 void print_dbt_on_metadata_gstring(struct db_table *dbt, GString *data){
-  g_mutex_lock(dbt->chunks_mutex);
+  g_message("lock print_dbt_on_metadata_gstring"); g_mutex_lock(dbt->chunks_mutex);
   g_string_append_printf(data,"\n[`%s`.`%s`]\nreal_table_name=%s\nrows = %"G_GINT64_FORMAT"\n", dbt->database->name, dbt->table_filename, dbt->table, dbt->rows);
   if (dbt->data_checksum)
     g_string_append_printf(data,"data_checksum = %s\n", dbt->data_checksum);
@@ -689,7 +689,7 @@ void print_dbt_on_metadata_gstring(struct db_table *dbt, GString *data){
     g_string_append_printf(data,"indexes_checksum = %s\n", dbt->indexes_checksum);
   if (dbt->triggers_checksum)
     g_string_append_printf(data,"triggers_checksum = %s\n", dbt->triggers_checksum);
-  g_mutex_unlock(dbt->chunks_mutex);
+  g_message("unlock print_dbt_on_metadata_gstring"); g_mutex_unlock(dbt->chunks_mutex);
 }
 
 void print_dbt_on_metadata(FILE *mdfile, struct db_table *dbt){

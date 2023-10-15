@@ -539,10 +539,10 @@ void write_row_into_file_in_sql_mode(MYSQL *conn, MYSQL_RES *result, struct tabl
   update_files_on_table_job(tj);
   message_dumping_data(tj->td,tj);
   if (dbt->insert_statement==NULL){
-    g_mutex_lock(dbt->chunks_mutex);
+    g_message("lock write_row_into_file_in_sql_mode"); g_mutex_lock(dbt->chunks_mutex);
     if (dbt->insert_statement==NULL)
       build_insert_statement(dbt, fields, num_fields);
-    g_mutex_unlock(dbt->chunks_mutex);
+    g_message("unlock write_row_into_file_in_sql_mode"); g_mutex_unlock(dbt->chunks_mutex);
   }
   while ((row = mysql_fetch_row(result))) {
     lengths = mysql_fetch_lengths(result);
@@ -560,9 +560,9 @@ void write_row_into_file_in_sql_mode(MYSQL *conn, MYSQL_RES *result, struct tabl
         }
         g_string_set_size(statement, 0);
       }
-      g_mutex_lock(dbt->chunks_mutex);
+      g_message("lock write_row_into_file_in_sql_mode"); g_mutex_lock(dbt->chunks_mutex);
       g_string_append(statement, dbt->insert_statement->str);
-      g_mutex_unlock(dbt->chunks_mutex);
+      g_message("unlock write_row_into_file_in_sql_mode"); g_mutex_unlock(dbt->chunks_mutex);
       num_rows_st = 0;
     }
 

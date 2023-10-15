@@ -195,7 +195,7 @@ void common_to_chunk_step(struct db_table *dbt, union chunk_step * cs, union chu
   g_async_queue_push(dbt->chunks_queue, new_cs);
 
   g_mutex_unlock(cs->integer_step.mutex);
-  g_mutex_unlock(dbt->chunks_mutex);
+  g_message("unlock common_to_chunk_step"); g_mutex_unlock(dbt->chunks_mutex);
 }
 
 
@@ -296,7 +296,7 @@ union chunk_step * split_signed_chunk_step(struct db_table *dbt, union chunk_ste
 
 
 union chunk_step *get_next_integer_chunk(struct db_table *dbt){
-  g_mutex_lock(dbt->chunks_mutex);
+  g_message("lock get_next_integer_chunk"); g_mutex_lock(dbt->chunks_mutex);
 //  GList *l=dbt->chunks;
   union chunk_step *cs=NULL;
   if (dbt->chunks!=NULL){
@@ -310,7 +310,7 @@ union chunk_step *get_next_integer_chunk(struct db_table *dbt){
         cs->integer_step.status=ASSIGNED;
         g_async_queue_push(dbt->chunks_queue, cs);
         g_mutex_unlock(cs->integer_step.mutex);
-        g_mutex_unlock(dbt->chunks_mutex);
+        g_message("unlock get_next_integer_chunk"); g_mutex_unlock(dbt->chunks_mutex);
         return cs;
       }
       if (cs->integer_step.is_unsigned) {
@@ -355,12 +355,12 @@ union chunk_step *get_next_integer_chunk(struct db_table *dbt){
 //    g_mutex_unlock(cs->integer_step.mutex);
 //    l=l->next;
   }
-  g_mutex_unlock(dbt->chunks_mutex);
+  g_message("unlock get_next_integer_chunk"); g_mutex_unlock(dbt->chunks_mutex);
   return NULL;
 }
 
 union chunk_step *get_next_char_chunk(struct db_table *dbt){
-  g_mutex_lock(dbt->chunks_mutex);
+  g_message("lock get_next_char_chunk"); g_mutex_lock(dbt->chunks_mutex);
   GList *l=dbt->chunks;
   union chunk_step *cs=NULL;
   while (l!=NULL){
@@ -375,7 +375,7 @@ union chunk_step *get_next_char_chunk(struct db_table *dbt){
     if (!cs->char_step.assigned){
       cs->char_step.assigned=TRUE;
       g_mutex_unlock(cs->char_step.mutex);
-      g_mutex_unlock(dbt->chunks_mutex);
+      g_message("unlock get_next_char_chunk"); g_mutex_unlock(dbt->chunks_mutex);
       return cs;
     }
     if (cs->char_step.deep <= char_deep && g_strcmp0(cs->char_step.cmax, cs->char_step.cursor)!=0 && cs->char_step.status == 0){
@@ -384,6 +384,9 @@ union chunk_step *get_next_char_chunk(struct db_table *dbt){
       cs->char_step.deep++;
       cs->char_step.status = 1;
       new_cs->char_step.assigned=TRUE;
+      // FIXME: are unlock mutex needed?
+      g_mutex_unlock(cs->char_step.mutex);
+      g_message("unlock get_next_char_chunk"); g_mutex_unlock(dbt->chunks_mutex);
       return new_cs;
     }else{
 //      g_message("Not able to split because %d > %d | %s == %s | %d != 0", cs->char_step.deep,num_threads, cs->char_step.cmax, cs->char_step.cursor, cs->char_step.status);
@@ -391,12 +394,12 @@ union chunk_step *get_next_char_chunk(struct db_table *dbt){
     g_mutex_unlock(cs->char_step.mutex);
     l=l->next;
   }
-  g_mutex_unlock(dbt->chunks_mutex);
+  g_message("unlock get_next_char_chunk"); g_mutex_unlock(dbt->chunks_mutex);
   return NULL;
 }
 
 union chunk_step *get_next_partition_chunk(struct db_table *dbt){
-  g_mutex_lock(dbt->chunks_mutex);
+  g_message("lock get_next_partition_chunk"); g_mutex_lock(dbt->chunks_mutex);
   GList *l=dbt->chunks;
   union chunk_step *cs=NULL;
   while (l!=NULL){
@@ -405,7 +408,7 @@ union chunk_step *get_next_partition_chunk(struct db_table *dbt){
     if (!cs->partition_step.assigned){
       cs->partition_step.assigned=TRUE;
       g_mutex_unlock(cs->partition_step.mutex);
-      g_mutex_unlock(dbt->chunks_mutex);
+      g_message("unlock get_next_partition_chunk"); g_mutex_unlock(dbt->chunks_mutex);
       return cs;
     }
 
@@ -420,13 +423,13 @@ union chunk_step *get_next_partition_chunk(struct db_table *dbt){
       dbt->chunks=g_list_append(dbt->chunks,new_cs);
 
       g_mutex_unlock(cs->partition_step.mutex);
-      g_mutex_unlock(dbt->chunks_mutex);
+      g_message("unlock get_next_partition_chunk"); g_mutex_unlock(dbt->chunks_mutex);
       return new_cs;
     }
     g_mutex_unlock(cs->partition_step.mutex);
     l=l->next;
   }
-  g_mutex_unlock(dbt->chunks_mutex);
+  g_message("unlock get_next_partition_chunk"); g_mutex_unlock(dbt->chunks_mutex);
   return NULL;
 }
 

@@ -1040,7 +1040,7 @@ void process_integer_chunk(struct thread_data *td, struct table_job *tj){
     }
     g_mutex_unlock(tj->chunk_step->integer_step.mutex);
   }
-  g_mutex_lock(dbt->chunks_mutex);
+  g_message("lock process_integer_chunk"); g_mutex_lock(dbt->chunks_mutex);
   g_mutex_lock(cs->integer_step.mutex);
   dbt->chunks=g_list_remove(dbt->chunks,cs);
   tj->chunk_step->integer_step.estimated_remaining_steps=0;
@@ -1049,7 +1049,7 @@ void process_integer_chunk(struct thread_data *td, struct table_job *tj){
     dbt->chunks=NULL;
   }
 //  g_message("Thread %d:Remaining 2 chunks: %d",td->thread_id,g_list_length(dbt->chunks));
-  g_mutex_unlock(dbt->chunks_mutex);
+  g_message("unlock process_integer_chunk"); g_mutex_unlock(dbt->chunks_mutex);
   g_mutex_unlock(cs->integer_step.mutex);
 }
 
@@ -1107,12 +1107,12 @@ void process_char_chunk(struct thread_data *td, struct table_job *tj){
         g_mutex_lock(cs->char_step.mutex);
         tj->dbt->chunks=g_list_append(tj->dbt->chunks,cs);
 
-        g_mutex_unlock(tj->dbt->chunks_mutex);
+        g_message("unlock process_char_chunk"); g_mutex_unlock(tj->dbt->chunks_mutex);
         g_mutex_unlock(previous->char_step.mutex);
         g_mutex_unlock(cs->char_step.mutex);
       }else{
         previous->char_step.status=0;
-        g_mutex_unlock(dbt->chunks_mutex);
+        g_message("unlock process_char_chunk"); g_mutex_unlock(dbt->chunks_mutex);
         g_mutex_unlock(previous->char_step.mutex);
         return;
       }
@@ -1135,11 +1135,11 @@ void process_char_chunk(struct thread_data *td, struct table_job *tj){
       g_message("Thread %d: Job has been cacelled",td->thread_id);
       return;
     }
-  g_mutex_lock(dbt->chunks_mutex);
+  g_message("lock process_char_chunk"); g_mutex_lock(dbt->chunks_mutex);
   g_mutex_lock(cs->char_step.mutex);
   dbt->chunks=g_list_remove(dbt->chunks,cs);
   g_mutex_unlock(cs->char_step.mutex);
-  g_mutex_unlock(dbt->chunks_mutex);
+  g_message("unlock process_char_chunk"); g_mutex_unlock(dbt->chunks_mutex);
 }
 
 void process_partition_chunk(struct thread_data *td, struct table_job *tj){
@@ -1458,7 +1458,7 @@ struct db_table *new_db_table( MYSQL *conn, struct configuration *conf, struct d
 }
 
 void free_db_table(struct db_table * dbt){
-  g_mutex_lock(dbt->chunks_mutex);
+  g_message("lock free_db_table"); g_mutex_lock(dbt->chunks_mutex);
   g_free(dbt->table);
   g_mutex_free(dbt->rows_lock);
   g_free(dbt->escaped_table);
@@ -1489,7 +1489,7 @@ void free_db_table(struct db_table * dbt){
     default:
       break;
   }
-  g_mutex_unlock(dbt->chunks_mutex);
+  g_message("unlock free_db_table"); g_mutex_unlock(dbt->chunks_mutex);
   g_mutex_free(dbt->chunks_mutex);
   g_free(dbt);
 }
