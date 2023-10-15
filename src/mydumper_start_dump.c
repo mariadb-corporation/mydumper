@@ -1205,6 +1205,22 @@ void start_dump() {
   mysql_close(conn);
   g_message("Main connection closed");  
 
+  g_rename(metadata_partial_filename, metadata_filename);
+
+  if (stream) {
+    stream_queue_push(NULL, g_strdup(metadata_filename));
+
+    if (exec_command!=NULL){
+      wait_exec_command_to_finish();
+    }else{
+      stream_queue_push(NULL, g_strdup(""));
+      wait_stream_to_finish();
+    }
+    if (no_delete == FALSE && output_directory_param == NULL)
+      if (g_rmdir(output_directory) != 0)
+        g_critical("Backup directory not removed: %s", output_directory);
+  }
+
   GList *iter = NULL;
   // TODO: We need to create jobs for metadata.
   all_dbts = g_list_reverse(all_dbts);
@@ -1222,6 +1238,7 @@ void start_dump() {
       fprintf(mdfile,"triggers_checksum = %s\n", dbt->triggers_checksum);
 */
     print_dbt_on_metadata(mdfile, dbt);
+    free_db_table(dbt);
   }
   g_list_free(all_dbts);
   write_database_on_disk(mdfile);
@@ -1256,30 +1273,11 @@ void start_dump() {
   fclose(mdfile);
   if (updated_since > 0)
     fclose(nufile);
-  g_rename(metadata_partial_filename, metadata_filename);
-  if (stream) stream_queue_push(NULL, g_strdup(metadata_filename));
 
   g_free(metadata_partial_filename);
   g_free(metadata_filename);
   g_message("Finished dump at: %s",datetimestr);
   g_free(datetimestr);
-
-  if (stream) {
-    if (exec_command!=NULL){
-      wait_exec_command_to_finish();
-    }else{
-      stream_queue_push(NULL, g_strdup(""));
-      wait_stream_to_finish();
-    }
-    if (no_delete == FALSE && output_directory_param == NULL)
-      if (g_rmdir(output_directory) != 0)
-        g_critical("Backup directory not removed: %s", output_directory);
-  }
-
-  for (iter = all_dbts; iter != NULL; iter = iter->next) {
-    free_db_table((struct db_table *)iter->data);
-  }
-
   g_free(td);
   g_free(threads);
   if (sthread!=NULL)
