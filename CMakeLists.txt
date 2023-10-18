@@ -18,11 +18,6 @@ find_package(MySQL)
 find_package(ZLIB)
 find_package(GLIB2)
 find_package(PCRE)
-find_package(JeMalloc)
-
-if (NOT JEMALLOC_FOUND)
-    MESSAGE(FATAL_ERROR "Could not find JeMalloc library")
-endif ()
 
 if (NOT MYSQL_FOUND)
     MESSAGE(FATAL_ERROR "Could not find MySQL or MariaDB client libraries")
@@ -89,10 +84,10 @@ SET( MYLOADER_SRCS src/myloader.c ${SHARED_SRCS} src/myloader_pmm_thread.c src/m
 
 add_executable(mydumper ${MYDUMPER_SRCS})
 # message(FATAL_ERROR ${MYSQL_LIBRARIES})
-target_link_libraries(mydumper ${JEMALLOC_LIBRARIES} ${MYSQL_LIBRARIES} ${GLIB2_LIBRARIES} ${GTHREAD2_LIBRARIES} ${GIO2_LIBRARIES} ${GOBJECT2_LIBRARIES} ${PCRE_PCRE_LIBRARY} ${ZLIB_LIBRARIES} stdc++ m )
+target_link_libraries(mydumper ${MYSQL_LIBRARIES} ${GLIB2_LIBRARIES} ${GTHREAD2_LIBRARIES} ${GIO2_LIBRARIES} ${GOBJECT2_LIBRARIES} ${PCRE_PCRE_LIBRARY} ${ZLIB_LIBRARIES} stdc++ m )
 
 add_executable(myloader ${MYLOADER_SRCS})
-target_link_libraries(myloader ${JEMALLOC_LIBRARIES} ${MYSQL_LIBRARIES} ${GLIB2_LIBRARIES} ${GTHREAD2_LIBRARIES} ${PCRE_PCRE_LIBRARY} ${ZLIB_LIBRARIES} stdc++)
+target_link_libraries(myloader ${MYSQL_LIBRARIES} ${GLIB2_LIBRARIES} ${GTHREAD2_LIBRARIES} ${PCRE_PCRE_LIBRARY} ${ZLIB_LIBRARIES} stdc++)
 
 
 
