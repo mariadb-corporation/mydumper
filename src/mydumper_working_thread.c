@@ -1401,7 +1401,7 @@ gchar *get_character_set_from_collation(MYSQL *conn, gchar *collation){
 struct db_table *new_db_table( MYSQL *conn, struct configuration *conf, struct database *database, char *table, char *table_collation, char *datalength, guint64 rows_in_sts){
   struct db_table *dbt = g_new(struct db_table, 1);
   dbt->database = database;
-  dbt->table = g_strdup(table);
+  dbt->table = backtick_protect(table);
   dbt->table_filename = get_ref_table(dbt->table);
   dbt->rows_in_sts = rows_in_sts;
   dbt->character_set = table_collation==NULL? NULL:get_character_set_from_collation(conn, table_collation);
