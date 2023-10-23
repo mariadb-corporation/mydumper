@@ -1228,7 +1228,9 @@ gchar *get_primary_key_string(MYSQL *conn, char *database, char *table) {
       break;
     }
 
-    gchar *tb = g_strdup_printf("`%s`", row[0]);
+    char *field_name= backtick_protect(row[0]);
+    gchar *tb = g_strdup_printf("`%s`", field_name);
+    g_free(field_name);
     g_string_append(field_list, tb);
     g_free(tb);
   }

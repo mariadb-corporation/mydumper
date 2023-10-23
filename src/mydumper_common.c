@@ -219,6 +219,15 @@ char * escape_string(MYSQL *conn, char *str){
   return r;
 }
 
+
+char * backtick_protect(char *r) {
+  GString *s= g_string_new_len(r, strlen(r) + 1);
+  g_string_replace(s, "`", "``", 0);
+  g_assert (s->str != r);
+  r= g_string_free(s, FALSE);
+  return r;
+}
+
 gchar * build_schema_table_filename(char *database, char *table, const char *suffix){
   GString *filename = g_string_sized_new(20);
   g_string_append_printf(filename, "%s.%s-%s.sql", database, table, suffix);
