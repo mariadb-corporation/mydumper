@@ -68,10 +68,6 @@ ELSE()
 #    set (CMAKE_SHARED_LINKER_FLAGS "-O3")
 ENDIF()
 
-add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
-set (CMAKE_SHARED_LINKER_FLAGS "-fsanitize=address -fno-omit-frame-pointer")
-add_link_options(-fsanitize=address -fno-omit-frame-pointer)
-
 if (NOT CMAKE_INSTALL_PREFIX)
   SET(CMAKE_INSTALL_PREFIX "/usr/local" CACHE STRING "Install path" FORCE)
 endif (NOT CMAKE_INSTALL_PREFIX)
@@ -83,7 +79,6 @@ SET( MYDUMPER_SRCS src/mydumper.c ${SHARED_SRCS} src/mydumper_pmm_thread.c src/m
 SET( MYLOADER_SRCS src/myloader.c ${SHARED_SRCS} src/myloader_pmm_thread.c src/myloader_stream.c src/myloader_stream.c src/myloader_process.c src/myloader_common.c src/myloader_directory.c src/myloader_restore.c src/myloader_restore_job.c src/myloader_control_job.c src/myloader_intermediate_queue.c src/myloader_arguments.c src/common_options.c src/myloader_worker_index.c src/myloader_worker_schema.c src/myloader_worker_loader.c src/myloader_worker_post.c )
 
 add_executable(mydumper ${MYDUMPER_SRCS})
-# message(FATAL_ERROR ${MYSQL_LIBRARIES})
 target_link_libraries(mydumper ${MYSQL_LIBRARIES} ${GLIB2_LIBRARIES} ${GTHREAD2_LIBRARIES} ${GIO2_LIBRARIES} ${GOBJECT2_LIBRARIES} ${PCRE_PCRE_LIBRARY} ${ZLIB_LIBRARIES} stdc++ m )
 
 add_executable(myloader ${MYLOADER_SRCS})
