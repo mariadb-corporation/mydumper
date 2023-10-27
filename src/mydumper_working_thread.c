@@ -285,7 +285,7 @@ void thd_JOB_DUMP_ALL_DATABASES( struct thread_data *td, struct job *job){
     if (!strcasecmp(row[0], "information_schema") ||
         !strcasecmp(row[0], "performance_schema") ||
         !strcasecmp(row[0], "data_dictionary") ||
-        check_skiplist(row[0], NULL))
+        (tables_skiplist_file && check_skiplist(row[0], NULL)))
       continue;
     struct database * db_tmp=NULL;
     if (get_database(td->thrconn,row[0],&db_tmp) && !no_schemas && (eval_regex(row[0], NULL))){
