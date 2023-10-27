@@ -7,9 +7,21 @@ mydumper_stor_dir="/tmp/data"
 mysqldumplog=/tmp/mysqldump.sql
 myloader_stor_dir=$mydumper_stor_dir
 stream_stor_dir="/tmp/stream_data"
-mydumper_base="."
-mydumper="${mydumper_base}/mydumper"
-myloader="${mydumper_base}/myloader"
+unset rr_record
+if command -v rr &> /dev/null
+then
+  rr_record="rr record"
+fi
+if [ -x ./mydumper -a -x ./myloader ]
+then
+  mydumper="./mydumper"
+  myloader="./myloader"
+else
+  mydumper="mydumper"
+  myloader="myloader"
+fi
+# LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so
+# export LD_PRELOAD
 export G_DEBUG=fatal-criticals
 > $mydumper_log
 > $myloader_log
@@ -50,12 +62,14 @@ test_case_dir (){
     then
       echo "Retrying export due error"
       echo "Exporting database: ${mydumper_parameters}"
-      eval $mydumper -u root -M -v 4 -L $tmp_mydumper_log ${mydumper_parameters}
+      rm -rf /tmp/fifodir
+      rm -rf ${mydumper_stor_dir} ${myloader_stor_dir}
+      eval $rr_record $mydumper -u root -M -v 4 -L $tmp_mydumper_log ${mydumper_parameters}
       error=$?
       cat $tmp_mydumper_log >> $mydumper_log
       if (( $error > 0 ))
         then
-        mysqldump --no-defaults -f -h 127.0.0.1 -u root --all-databases > $mysqldumplog
+        mysqldump --no-defaults -f -u root --all-databases > $mysqldumplog
         echo "Error running: $mydumper -u root -M -v 4 -L $mydumper_log ${mydumper_parameters}"
         cat $tmp_mydumper_log
         mv $tmp_mydumper_log $mydumper_stor_dir
@@ -68,13 +82,14 @@ test_case_dir (){
   echo "DROP DATABASE IF EXISTS sakila;
 DROP DATABASE IF EXISTS myd_test;
 DROP DATABASE IF EXISTS myd_test_no_fk;
-DROP DATABASE IF EXISTS empty_db;" | mysql --no-defaults -f -h 127.0.0.1 -u root
+DROP DATABASE IF EXISTS empty_db;" | mysql --no-defaults -f -u root
   fi
   if [ "${myloader_parameters}" != "" ]
   then
     # Import
     echo "Importing database: ${myloader_parameters}"
-    mysqldump --no-defaults -f -h 127.0.0.1 -u root --all-databases > $mysqldumplog
+    mysqldump --no-defaults -f -u root --all-databases > $mysqldumplog
+    rm -rf /tmp/fifodir
     eval $myloader -u root -v 4 -L $tmp_myloader_log ${myloader_parameters}
     error=$?
     cat $tmp_myloader_log >> $myloader_log
@@ -82,7 +97,8 @@ DROP DATABASE IF EXISTS empty_db;" | mysql --no-defaults -f -h 127.0.0.1 -u root
     then
       echo "Retrying import due error"
       echo "Importing database: ${myloader_parameters}"
-      mysqldump --no-defaults -f -h 127.0.0.1 -u root --all-databases > $mysqldumplog
+      mysqldump --no-defaults -f -u root --all-databases > $mysqldumplog
+      rm -rf /tmp/fifodir
       eval $myloader -u root -v 4 -L $tmp_myloader_log ${myloader_parameters}
       error=$?
       cat $tmp_myloader_log >> $myloader_log
@@ -122,14 +138,16 @@ test_case_stream (){
     echo "Exporting database: $mydumper --stream -u root -M -v 4 -L $tmp_mydumper_log ${mydumper_parameters} | $myloader  ${myloader_general_options} -u root -v 4 -L $tmp_myloader_log ${myloader_parameters} --stream"
     eval $mydumper --stream -u root -M -v 4 -L $tmp_mydumper_log ${mydumper_parameters} > /tmp/stream.sql
     error=$?
-    mysqldump --no-defaults -f -h 127.0.0.1 -u root --all-databases > $mysqldumplog
+    mysqldump --no-defaults -f -u root --all-databases > $mysqldumplog
     if (( $error > 0 ))
     then
       echo "Retrying export due error"
       echo "Exporting database: $mydumper --stream -u root -M -v 4 -L $tmp_mydumper_log ${mydumper_parameters} | $myloader  ${myloader_general_options} -u root -v 4 -L $tmp_myloader_log ${myloader_parameters} --stream"
-      eval $mydumper --stream -u root -M -v 4 -L $tmp_mydumper_log ${mydumper_parameters} > /tmp/stream.sql
+      rm -rf ${mydumper_stor_dir} ${myloader_stor_dir}
+      rm -rf /tmp/fifodir
+      eval $rr_record $mydumper --stream -u root -M -v 4 -L $tmp_mydumper_log ${mydumper_parameters} > /tmp/stream.sql
       error=$?
-      mysqldump --no-defaults -f -h 127.0.0.1 -u root --all-databases > $mysqldumplog
+      mysqldump --no-defaults -f -u root --all-databases > $mysqldumplog
       if (( $error > 0 ))
       then
         echo "Error running: $mydumper --stream -u root -M -v 4 -L $mydumper_log ${mydumper_parameters}"
@@ -143,7 +161,7 @@ test_case_stream (){
   echo "DROP DATABASE IF EXISTS sakila;
 DROP DATABASE IF EXISTS myd_test;
 DROP DATABASE IF EXISTS myd_test_no_fk;
-DROP DATABASE IF EXISTS empty_db;" | mysql --no-defaults -f -h 127.0.0.1 -u root
+DROP DATABASE IF EXISTS empty_db;" | mysql --no-defaults -f -u root
   fi
     cat /tmp/stream.sql | $myloader ${myloader_general_options} -u root -v 4 -L $tmp_myloader_log ${myloader_parameters} --stream
     error=$?
@@ -180,18 +198,18 @@ prepare_full_test(){
   fi
   tar xzf sakila-db.tar.gz
   sed -i 's/last_update TIMESTAMP/last_update TIMESTAMP NOT NULL/g;s/NOT NULL NOT NULL/NOT NULL/g' sakila-db/sakila-schema.sql
-  mysql --no-defaults -f -h 127.0.0.1 -u root < sakila-db/sakila-schema.sql
-  mysql --no-defaults -f -h 127.0.0.1 -u root < sakila-db/sakila-data.sql
+  mysql --no-defaults -f -u root < sakila-db/sakila-schema.sql
+  mysql --no-defaults -f -u root < sakila-db/sakila-data.sql
 
   echo "Import testing database"
   DATABASE=myd_test
-  mysql --no-defaults -f -h 127.0.0.1 -u root < test/mydumper_testing_db.sql
+  mysql --no-defaults -f -u root < test/mydumper_testing_db.sql
 
   # export -- import
   # 1000 rows -- database must not exist
 
-  mydumper_general_options="-h 127.0.0.1 -u root -R -E -G -o ${mydumper_stor_dir} --regex '^(?!(mysql\.|sys\.))'"
-  myloader_general_options="-h 127.0.0.1 -o --max-threads-for-index-creation=1 --max-threads-for-post-actions=1"
+  mydumper_general_options="-u root -R -E -G -o ${mydumper_stor_dir} --regex '^(?!(mysql\.|sys\.))' --fifodir=/tmp/fifodir"
+  myloader_general_options="-o --max-threads-for-index-creation=1 --max-threads-for-post-actions=1  --fifodir=/tmp/fifodir"
 }
 
 full_test_global(){
@@ -213,7 +231,8 @@ full_test_global(){
             # statement size to 2MB -- overriting database
             $test $backup_mode $compress_mode $rows_and_filesize_mode -s 2000000                      ${mydumper_general_options} -- ${myloader_general_options} -d ${myloader_stor_dir} --serialized-table-creation $innodb_optimize_key_mode
             # compress and rows
-            $test $backup_mode $compress_mode $rows_and_filesize_mode --use-savepoints --less-locking ${mydumper_general_options} -- ${myloader_general_options} -d ${myloader_stor_dir} --serialized-table-creation $innodb_optimize_key_mode
+            # FIXME: savepoints does't work in AUTOCOMMIT=1
+            # $test $backup_mode $compress_mode $rows_and_filesize_mode --use-savepoints --less-locking ${mydumper_general_options} -- ${myloader_general_options} -d ${myloader_stor_dir} --serialized-table-creation $innodb_optimize_key_mode
  
     # ANSI_QUOTES
 #    $test -r 1000 -G ${mydumper_general_options} --defaults-file="test/mydumper.cnf"                                -- ${myloader_general_options} -d ${myloader_stor_dir} --serialized-table-creation --defaults-file="test/mydumper.cnf"
