@@ -1,0 +1,58 @@
+#!/bin/bash
+set -e
+
+# check out and build from mydumper repository
+mkdir -p ~/src
+cd $_
+
+source /etc/os-release
+if [[ "$VERSION_ID" = 7 ]]; then
+  dist="el7"
+else
+  dist="el8" # or el7 if building on RHEL/CentOS 7
+fi
+
+branch="corp"
+
+if [ -d mydumper ]
+then
+    cd mydumper
+    git checkout ${branch}
+    git pull
+else
+    git clone -b ${branch} git@github.com:mariadb-corporation/mydumper.git mydumper
+    cd mydumper
+fi
+source VERSION
+mkdir -p /tmp/src/mydumper
+cd $_
+rm -rf $dist
+ln -s ~/src/mydumper $dist
+cd $dist
+
+git status
+cmake .
+make -j$(nproc) VERBOSE=1
+
+extra_install()
+{(
+    pkg=${PKG%%.rpm}
+    dstdir=$(readlink -f "$TARGET")
+    cd ~/src/mydumper
+    # We skip top 2 commits in changelog as these are release-related commits (always same)
+    git log --first-parent origin/master~..HEAD~ > $dstdir/$pkg.txt
+    cat > $WORK_DIR/SOURCES/install.inc << EOF
+install -Dm 0664 $dstdir/$pkg.txt \${RPM_BUILD_ROOT}%{_docdir}/mydumper/changelog.txt
+install -m 0755 test_mydumper.sh \${RPM_BUILD_ROOT}%{_docdir}/mydumper
+mkdir -p \${RPM_BUILD_ROOT}%{_docdir}/mydumper/test
+install -Dm 0664 -t \${RPM_BUILD_ROOT}%{_docdir}/mydumper/test test/*
+install -m 0755 package/mydumper-fix-dump \${RPM_BUILD_ROOT}%{_bindir}
+EOF
+    cat > $WORK_DIR/SOURCES/files.inc << EOF
+%{_docdir}/mydumper/*
+EOF
+)}
+
+. package/build.sh ${ver} ${rev} rpm ${dist} x86_64 extra_install
+sudo rpm -e mydumper &> /dev/null || true
+sudo rpm -i $TARGET/$PKG

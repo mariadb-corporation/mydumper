@@ -1,0 +1,25 @@
+#!/bin/bash
+
+die()
+{
+    [ -n "$1" ] && echo "$1" >&2;
+    exit 1
+}
+
+if [ -z "$1" ]; then
+    cat << EOF
+Usage: $0 <dump_directory>
+EOF
+    exit
+fi
+
+if [ ! -d "$1" ]; then
+    die "$1 is not a directory!"
+fi
+
+if [ ! -f "$1/metadata" ]; then
+    die "$1 is not mydumper dump directory!"
+fi
+
+find "$1" -type f -name '*.sql' -exec sed -i -Ee "/^\/\*!.+SET SQL_MODE=/ {s/STRICT_TRANS_TABLES//; s/,,/,/; s/,'\*\/;/'\*\/;/ }" '{}' ';' -print
+echo 'Done!'
