@@ -4,7 +4,7 @@ set names utf8;
 
 create database имя_базы_в_кодировке_утф8_длиной_больше_чем_45;
 show databases;
-
+use имя_базы_в_кодировке_утф8_длиной_больше_чем_45;
 create table t1 (x int);
 
 --let $outdir= $MYSQL_TMP_DIR/mydumper

@@ -16,8 +16,7 @@ disable_result_log;
 --mkdir $targetdir
 --exec $MYDUMPER -o $targetdir -B test
 enable_result_log;
-
---echo # xtrabackup prepare;
+drop database test;
 disable_result_log;
 source include/myloader_restore.inc;
 enable_result_log;

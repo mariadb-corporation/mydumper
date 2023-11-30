@@ -10,7 +10,7 @@ while ($db)
   inc $i;
   let $db= `select elt($i, '$db_args')`;
 }
---echo # Restoring...
+#--echo # Restoring...
 --exec $MYLOADER -d $targetdir --debug -L $targetdir/../myloader.log $myloader_args
 if (!$myloader_keep_dir)
 {
